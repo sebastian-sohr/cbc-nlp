@@ -31,7 +31,7 @@ class ContentHandler(ABC):
         pass
 
     @abstractmethod
-    def get_bytes(self, key, bytes, prefix=""):
+    def get_bytes(self, key, prefix=""):
         pass
 
     @classmethod
@@ -58,7 +58,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
 
     def get_full_path(self, key, prefix=""):
         assert(key is not None and len(key) > 0)
-        return get_path(prefix) / key
+        return self.get_path(prefix) / key
 
     def list(self, prefix=""):
         path = Path(self.base_folder + "/" + prefix)
@@ -83,7 +83,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
         with full_path.open("wb") as f:
             f.write(bytes)
 
-    def get_bytes(self, key, bytes, prefix=""):
+    def get_bytes(self, key, prefix=""):
         bytes = self.get_full_path(key, prefix=prefix).read_bytes()
         return bytes
 
@@ -148,7 +148,7 @@ class AwsS3ContentHandler(ContentHandler, ABC):
             Body=bytes
         )
 
-    def get_bytes(self, bytes, prefix=""):
+    def get_bytes(self, key, prefix=""):
         full_prefix = self.append_prefix(self.base_prefix, prefix)
         full_key = self.append_prefix(full_prefix, key)
         response = self.client.get_object(Bucket=self.bucket, Key=full_key)

@@ -5,6 +5,7 @@ from consileon.nlp.rss_scraping import RssScraper
 h = content.AwsS3ContentHandler("cbc-rss-test")
 raw_handler = content.AwsS3ContentHandler("cbc-rss-test", base_prefix="raw")
 
+
 spiegelRssUrls = [
         "http://www.spiegel.de/schlagzeilen/tops/index.rss",
         "http://www.spiegel.de/politik/index.rss",
