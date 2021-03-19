@@ -34,27 +34,24 @@ class RssScraper:
         urls=(),
         extractor=None,
         time_wait_seconds=3600,
-        do_save=False,
         time_wait_between_items=0.01,
         prefix="",
         content_handler=None,
-        timeout=None
+        timeout=None,
+        raw_content_handler=None
     ):
         logger.info("Initializing scraper: '%s'" % prefix)
         self.urls = list(urls)
         self.extractors = {'default': extractor}
         self.knownItems = {}
         self.timeWaitSeconds = time_wait_seconds
-        self.doSave = do_save
         self.userAgent = 'Mozilla/5.0'
         self.timeWaitBetweenItems = time_wait_between_items
         self.prefix = prefix
         self.timeout = timeout
-        if content_handler is not None:
-            self.content_handler = content_handler
-        else:
-            self.content_handler = content.FileSystemContentHandler()
-        if self.doSave:
+        self.raw_content_handler = raw_content_handler
+        self.content_handler = content_handler
+        if self.content_handler is not None:
             logger.info("Reading known items for '%s'." % prefix)
             self.knownItems = {f: "dummy" for f in content_handler.list(self.prefix)}
             logger.info("Ready: Reading known items for '%s', number: %i ." % (prefix, len(self.knownItems)))
@@ -70,11 +67,20 @@ class RssScraper:
         return result
 
     def save_item(self, an_item, a_key, item_url="-"):
-        self.content_handler.save_text(
-            a_key,
-            Et.tostring(an_item, encoding='utf-8', method='xml').decode('utf-8'),
-            prefix=self.prefix
-        )
+        if self.content_handler is not None:
+            self.content_handler.save_text(
+                a_key,
+                Et.tostring(an_item, encoding='utf-8', method='xml').decode('utf-8'),
+                prefix=self.prefix
+            )
+
+    def save_raw(self, bytes, a_key, item_url="-"):
+        if self.raw_content_handler is not None:
+            self.raw_content_handler.save_bytes(
+                a_key,
+                bytes,
+                prefix=self.prefix
+            )
 
     def pull_once(self):
         num_all = 0
@@ -82,23 +88,27 @@ class RssScraper:
         for i in self.get_all_items():
             num_all = num_all + 1
             l_ = RssScraper.get_link_from_item(i)
-            file_name = RssScraper.get_md5_hash(l_) + ".xml"
+            key = RssScraper.get_md5_hash(l_)
+            file_name =  key + ".xml"
+            raw_bytes = None
             if file_name not in self.knownItems:
                 found_content = False
                 for aLanguage in self.extractors:
-                    found_lang = RssScraper.add_content_to_item(
+                    raw_bytes_ = RssScraper.add_content_to_item(
                         i,
                         self.extractors[aLanguage],
                         aLanguage,
                         time_wait=self.timeWaitBetweenItems,
                         timeout=self.timeout
                     )
-                    found_content = found_lang or found_content
+                    if raw_bytes is None and raw_bytes_ is not None:
+                        raw_bytes = raw_bytes_
+                    found_content = found_content or (raw_bytes_ is not None)
                 if found_content:
                     num_new = num_new + 1
                     self.knownItems[file_name] = i
-                    if self.doSave:
-                        self.save_item(i, file_name, item_url=l_)
+                    self.save_item(i, file_name, item_url=l_)
+                    self.save_raw(raw_bytes, key + ".raw", item_url=l_)
         logger.info("%s : Inserted %i new items (from %i)" % (self.prefix, num_new, num_all))
 
     def poll(self):
@@ -126,6 +136,7 @@ class RssScraper:
     def add_content_to_item(an_item, an_extractor, language='default', time_wait=0.0, timeout=None):
         link_url = RssScraper.get_link_from_item(an_item)
         content_ = None
+        html = None
         if link_url is not None:
             time.sleep(time_wait)
             html = RssScraper.read_doc_from_url(link_url, timeout=timeout)
@@ -139,10 +150,7 @@ class RssScraper:
                     content_.set('language', language)
                 content_.text = a_text
                 an_item.append(content_)
-        if content_ is not None:
-            return True
-        else:
-            return False
+        return html
 
     @staticmethod
     def get_link_from_item(an_item):

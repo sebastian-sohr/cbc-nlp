@@ -26,6 +26,14 @@ class ContentHandler(ABC):
     def get_text(self, key, prefix=""):
         pass
 
+    @abstractmethod
+    def save_bytes(self, key, bytes, prefix=""):
+        pass
+
+    @abstractmethod
+    def get_bytes(self, key, bytes, prefix=""):
+        pass
+
     @classmethod
     def append_prefix(cls, base_prefix, prefix):
         sep = ""
@@ -45,22 +53,39 @@ class FileSystemContentHandler(ContentHandler, ABC):
         self.encoding = encoding
         super().__init__()
 
+    def get_path(self, prefix=""):
+        return Path(self.base_folder + "/" + prefix)
+
+    def get_full_path(self, key, prefix=""):
+        assert(key is not None and len(key) > 0)
+        return get_path(prefix) / key
+
     def list(self, prefix=""):
         path = Path(self.base_folder + "/" + prefix)
         path.mkdir(parents=True, exist_ok=True)
         return [f for f in listdir(path) if isfile(path / f)]
 
     def save_text(self, key, text, prefix=""):
-        path = Path(self.base_folder + "/" + prefix)
+        path = self.get_path(prefix=prefix)
         path.mkdir(parents=True, exist_ok=True)
         full_path = path / key
         with full_path.open("w", encoding=self.encoding) as f:
             f.write(text)
 
     def get_text(self, key, prefix=""):
-        full_path = self.base_folder + "/" + prefix + "/" + key
-        text = Path(full_path).read_text(encoding=self.encoding)
+        text = self.get_full_path(key, prefix=prefix).read_text(encoding=self.encoding)
         return text
+
+    def save_bytes(self, key, bytes, prefix=""):
+        path = self.get_path(prefix=prefix)
+        path.mkdir(parents=True, exist_ok=True)
+        full_path = path / key
+        with full_path.open("wb") as f:
+            f.write(bytes)
+
+    def get_bytes(self, key, bytes, prefix=""):
+        bytes = self.get_full_path(key, prefix=prefix).read_bytes()
+        return bytes
 
 
 class AwsS3ContentHandler(ContentHandler, ABC):
@@ -113,3 +138,19 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         response = self.client.get_object(Bucket=self.bucket, Key=full_key)
         text = response['Body'].read().decode(response['ContentEncoding'])
         return text
+
+    def save_bytes(self, key, bytes, prefix=""):
+        full_prefix = self.append_prefix(self.base_prefix, prefix)
+        full_key = self.append_prefix(full_prefix, key)
+        self.client.put_object(
+            Bucket=self.bucket,
+            Key=full_key,
+            Body=bytes
+        )
+
+    def get_bytes(self, bytes, prefix=""):
+        full_prefix = self.append_prefix(self.base_prefix, prefix)
+        full_key = self.append_prefix(full_prefix, key)
+        response = self.client.get_object(Bucket=self.bucket, Key=full_key)
+        bytes = response['Body'].read()
+        return bytes

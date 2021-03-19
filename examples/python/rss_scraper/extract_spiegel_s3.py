@@ -3,6 +3,7 @@ from bs4 import BeautifulSoup as bs
 from consileon.nlp.rss_scraping import RssScraper
 
 h = content.AwsS3ContentHandler("cbc-rss-test")
+raw_handler = content.AwsS3ContentHandler("cbc-rss-test", base_prefix="raw")
 
 spiegelRssUrls = [
         "http://www.spiegel.de/schlagzeilen/tops/index.rss",
@@ -36,8 +37,8 @@ s = RssScraper(
     prefix="spiegel",
     extractor=spiegel_extractor,
     time_wait_seconds=1 * 3600,
-    do_save=True,
-    content_handler=h
+    content_handler=h,
+    raw_content_handler=raw_handler
 )
 
 s.pull_once()
