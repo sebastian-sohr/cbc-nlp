@@ -124,14 +124,14 @@ class RssScraper:
         if time_wait_seconds is None:
             time_wait_seconds = self.timeWaitSeconds
         while i != num_of_loops:
-            logger.info("Scraper %s, starting round %i / %i" % (self.prefix, i, num_of_loops))
+            logger.info("Scraper %s, starting round %i / %i" % (self.prefix, i+1, num_of_loops))
             self.pull_once()
-            logger.info("Scraper %s, round %i / %i, sleeping %i seconds" % (self.prefix, i, num_of_loops, time_wait_seconds))
+            logger.info("Scraper %s, round %i / %i, sleeping %i seconds" % (self.prefix, i+1, num_of_loops, time_wait_seconds))
             if i+1 == num_of_loops:
                 del self.knownItems
                 gc.collect()
             time.sleep(time_wait_seconds)
-            logger.info("Ready: Scraper %s, round %i / %i" % (self.prefix, i, num_of_loops))
+            logger.info("Ready: Scraper %s, round %i / %i" % (self.prefix, i+1, num_of_loops))
             i = i+1
 
     def get_all_items(self):
