@@ -17,6 +17,7 @@ from xml.etree.ElementTree import ParseError
 from tika import parser as tk_parser
 import consileon.nlp.content as content
 import ssl
+import gc
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
@@ -38,7 +39,8 @@ class RssScraper:
         prefix="",
         content_handler=None,
         timeout=None,
-        raw_content_handler=None
+        raw_content_handler=None,
+        num_of_loops=1
     ):
         logger.info("Initializing scraper: '%s'" % prefix)
         self.urls = list(urls)
@@ -51,9 +53,10 @@ class RssScraper:
         self.timeout = timeout
         self.raw_content_handler = raw_content_handler
         self.content_handler = content_handler
+        self.num_of_loops = num_of_loops
         if self.content_handler is not None:
             logger.info("Reading known items for '%s'." % prefix)
-            self.knownItems = {f: "dummy" for f in content_handler.list(self.prefix)}
+            self.knownItems = {f: "x" for f in content_handler.list(self.prefix)}
             logger.info("Ready: Reading known items for '%s', number: %i ." % (prefix, len(self.knownItems)))
 
     def get_item(self, a_key):
@@ -106,15 +109,30 @@ class RssScraper:
                     found_content = found_content or (raw_bytes_ is not None)
                 if found_content:
                     num_new = num_new + 1
-                    self.knownItems[file_name] = i
+                    if self.content_handler is not None:
+                        self.knownItems[file_name] = "x"
+                    else:
+                        self.knownItems[file_name] = i
                     self.save_item(i, file_name, item_url=l_)
                     self.save_raw(raw_bytes, key + ".raw", item_url=l_)
         logger.info("%s : Inserted %i new items (from %i)" % (self.prefix, num_new, num_all))
 
-    def poll(self):
-        while True:
+    def poll(self, num_of_loops=None, time_wait_seconds=None):
+        i = 0
+        if num_of_loops is None:
+            num_of_loops = self.num_of_loops
+        if time_wait_seconds is None:
+            time_wait_seconds = self.timeWaitSeconds
+        while i != num_of_loops:
+            logger.info("Scraper %s, starting round %i / %i" % (self.prefix, i, num_of_loops))
             self.pull_once()
-            time.sleep(self.timeWaitSeconds)
+            logger.info("Scraper %s, round %i / %i, sleeping %i seconds" % (self.prefix, i, num_of_loops, time_wait_seconds))
+            if i+1 == num_of_loops:
+                del self.knownItems
+                gc.collect()
+            time.sleep(time_wait_seconds)
+            logger.info("Ready: Scraper %s, round %i / %i" % (self.prefix, i, num_of_loops))
+            i = i+1
 
     def get_all_items(self):
         rss_docs = [
