@@ -4,6 +4,7 @@ from pathlib import Path
 from os import listdir
 from os.path import isfile
 import boto3
+from s3streaming import s3_open, deserialize
 
 
 logger = logging.getLogger('consileon.nlp.content')
@@ -32,6 +33,10 @@ class ContentHandler(ABC):
 
     @abstractmethod
     def get_bytes(self, key, prefix=""):
+        pass
+
+    @abstractmethod
+    def iterate_lines(self, key, prefix=""):
         pass
 
     @classmethod
@@ -86,6 +91,14 @@ class FileSystemContentHandler(ContentHandler, ABC):
     def get_bytes(self, key, prefix=""):
         bytes = self.get_full_path(key, prefix=prefix).read_bytes()
         return bytes
+
+    def iterate_lines(self, key, prefix=""):
+       with open(self.get_full_path(key, prefix=prefix), 'r') as file:
+            for line in file:
+                yield line
+            file.close()
+
+
 
 
 class AwsS3ContentHandler(ContentHandler, ABC):
@@ -154,3 +167,15 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         response = self.client.get_object(Bucket=self.bucket, Key=full_key)
         bytes = response['Body'].read()
         return bytes
+
+    def iterate_lines(self, key, prefix=""):
+        full_prefix = self.append_prefix(self.base_prefix, prefix)
+        full_key = self.append_prefix(full_prefix, key)
+        with s3_open(
+                "s3://" + self.bucket + "/" + full_key,
+                boto_session=boto3.session.Session(),
+                deserializer=deserialize.string
+        ) as file:
+            for line in file:
+                yield line
+            file.close()
