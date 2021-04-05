@@ -74,6 +74,8 @@ import ast
 import sys
 
 import codecs
+import consileon.nlp.content as content
+
 
 logger = logging.getLogger('consileon.nlp.pipeline')
 
@@ -426,7 +428,7 @@ class IsNLText(ItemModifier):
 
 class LemmatizeModifier(ItemModifier):
     def __init__(self,
-                 lemmatizer=spacy.load('de'),
+                 lemmatizer=spacy.load("de_core_news_sm"),
                  chunksize=LEMMATIZE_MAX_SIZE
                  ):
         self.lemmatizer = lemmatizer
@@ -495,7 +497,7 @@ class TokenizeText(ItemModifier):
 
 class LemmaTokenizeText(ItemModifier):
     def __init__(self,
-                 lemmatizer=spacy.load('de'),
+                 lemmatizer=spacy.load("de_core_news_sm"),
                  max_chunk_length=LEMMATIZE_MAX_CHUNK_SIZE,
                  re_replace_space_chars=RE_REPLACE_SPACE_CHARS,
                  re_remove_chars=RE_REMOVE_CHARS
@@ -640,51 +642,82 @@ class LineSourceTokenizer(LineSourceIterator):
         self.get_line = get_line
 
 
-class XmlSourceGenerator(BaseGenerator):
-    def __init__(self,
-                 source_files,
-                 content_tag="content",
-                 min_text_length=10,
-                 log_freq=1000,
-                 is_tagged=False,
-                 tag_rule=0  # 0 = "filename", 1 = "number"
-                 ):
+class FileSourceGenerator(BaseGenerator):
+    def __init__(
+            self,
+            source_files,
+            log_freq=1000,
+            is_tagged=False,
+            tag_rule=0,  # 0 = "filename", 1 = "number"
+            content_handler=None,
+            base_folder='.',
+            file_type=str
+        ):
         self.sourceFiles = source_files
-        self.contentTag = content_tag
-        self.minTextLength = min_text_length
         self.logFreq = log_freq
         self.tag_rule = tag_rule
         self.num_source_files = len(self.sourceFiles)
+        if content_handler is None:
+            self.contentHandler = content.FileSystemContentHandler(base_folder=base_folder)
+        else:
+            self.contentHandler = content_handler
         logger.info("num_source_files : %i" % self.num_source_files)
-        super(XmlSourceGenerator, self).__init__(is_tagged=is_tagged)
+
+        if file_type == str:
+            def get_object(prefix, key):
+                return self.contentHandler.get_text(key, prefix=prefix)
+        elif file_type == bytes:
+            def get_object(prefix, key):
+                return self.contentHandler.get_bytes(key, prefix=prefix)
+
+        self.get_object = get_object
+        super(FileSourceGenerator, self).__init__(is_tagged=is_tagged)
 
     def __call__(self):
         do_tag = None
         if self.is_tagged:
             if self.tag_rule == 0:
-                def do_tag(content_, f_, _):
-                    return content_, [f_]
+                def do_tag(res_, p_, f_, _):
+                    return res_, [p_, f_]
             elif self.tag_rule == 1:
-                def do_tag(content_, _, n_f_):
-                    return content_, [n_f_]
+                def do_tag(res_, _, __, n_):
+                    return res_, [n_]
         else:
-            def do_tag(content_, _, __):
-                return content_
+            def do_tag(res_, _, __, ___):
+                return res_
         n = 0
-        n_f = 0
-        for f in self.sourceFiles:
+        for (prefix, key) in self.sourceFiles:
             try:
-                xml = eT.parse(f).getroot()
+                result = self.get_object(prefix, key)
+                if n % self.logFreq == 0:
+                    logger.info("xml out=%i, read=%i, (%s / %s)" % (n, self.num_source_files, prefix, key))
+                yield do_tag(result, prefix, key, n)
+                n += 1
+            except IOError:
+                logger.error("could not read %s in %s" % (key, prefix), exc_info=True)
+
+
+class XmlParser(ItemModifier):
+    def __init__(
+            self,
+            content_tag="content",
+            min_text_length=10
+        ):
+        self.contentTag = content_tag
+        self.minTextLength = min_text_length
+        def f(xml_string):
+            result = None
+            try:
+                xml = eT.fromstring(xml_string)
                 content = " ".join([c.text for c in xml.findall("./" + self.contentTag) if c.text is not None]).strip()
                 xml.clear()
                 if len(content) >= self.minTextLength:
-                    if n % self.logFreq == 0:
-                        logger.info("xml out=%i, read=%i/%i, (%s)" % (n, n_f, self.num_source_files, f))
-                    yield do_tag(content, f, n_f)
-                    n += 1
-                n_f += 1
+                    result = content
             except IOError:
-                logger.error("could not parse %s" % f, exc_info=True)
+                logger.error("could not parse %s:\n" % xml_string, exc_info=True)
+            return result
+
+        super(XmlParser, self).__init__(f=f)
 
 
 class Merge(IteratorModifier):

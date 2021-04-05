@@ -11,7 +11,6 @@ logger = logging.getLogger('consileon.nlp.content')
 
 
 class ContentHandler(ABC):
-
     def __init__(self):
         super().__init__()
 
@@ -48,7 +47,6 @@ class ContentHandler(ABC):
 
 
 class FileSystemContentHandler(ContentHandler, ABC):
-
     def __init__(
         self,
         base_folder='.',
@@ -99,10 +97,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
             file.close()
 
 
-
-
 class AwsS3ContentHandler(ContentHandler, ABC):
-
     def __init__(
         self,
         bucket=None,
@@ -115,6 +110,9 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         self.encoding = encoding
         self.client = boto3.client('s3')
         super().__init__()
+
+    def get_full_key(self, key, prefix=""):
+        return self.append_prefix(self.append_prefix(self.base_prefix, prefix), key)
 
     def list(self, prefix=""):
         result = []
@@ -136,43 +134,33 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         return result
 
     def save_text(self, key, text, prefix=""):
-        full_prefix = self.append_prefix(self.base_prefix, prefix)
-        full_key = self.append_prefix(full_prefix, key)
         self.client.put_object(
             Bucket=self.bucket,
-            Key=full_key,
+            Key=self.get_full_key(key, prefix=prefix),
             ContentEncoding=self.encoding,
             Body=text.encode(self.encoding)
         )
 
     def get_text(self, key, prefix=""):
-        full_prefix = self.append_prefix(self.base_prefix, prefix)
-        full_key = self.append_prefix(full_prefix, key)
-        response = self.client.get_object(Bucket=self.bucket, Key=full_key)
+        response = self.client.get_object(Bucket=self.bucket, Key=self.get_full_key(key, prefix=prefix))
         text = response['Body'].read().decode(response['ContentEncoding'])
         return text
 
     def save_bytes(self, key, bytes, prefix=""):
-        full_prefix = self.append_prefix(self.base_prefix, prefix)
-        full_key = self.append_prefix(full_prefix, key)
         self.client.put_object(
             Bucket=self.bucket,
-            Key=full_key,
+            Key=self.get_full_key(key, prefix=prefix),
             Body=bytes
         )
 
     def get_bytes(self, key, prefix=""):
-        full_prefix = self.append_prefix(self.base_prefix, prefix)
-        full_key = self.append_prefix(full_prefix, key)
-        response = self.client.get_object(Bucket=self.bucket, Key=full_key)
+        response = self.client.get_object(Bucket=self.bucket, Key=self.get_full_key(key, prefix=prefix))
         bytes = response['Body'].read()
         return bytes
 
     def iterate_lines(self, key, prefix=""):
-        full_prefix = self.append_prefix(self.base_prefix, prefix)
-        full_key = self.append_prefix(full_prefix, key)
         with s3_open(
-                "s3://" + self.bucket + "/" + full_key,
+                "s3://" + self.bucket + "/" + self.get_full_key(key, prefix=prefix),
                 boto_session=boto3.session.Session(),
                 deserializer=deserialize.string
         ) as file:

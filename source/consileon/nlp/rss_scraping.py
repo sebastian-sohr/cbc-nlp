@@ -264,7 +264,7 @@ def create_rss_file_list(content_provider, channels, do_random_shuffle=True):
 
     """
     files = [
-        (d, f) for d in channels for f in content_provider.list(prefix=d) if f.endswith(".xml")
+        (prefix, key) for prefix in channels for key in content_provider.list(prefix=prefix) if key.endswith(".xml")
     ]
     if do_random_shuffle:
         random.shuffle(files)
