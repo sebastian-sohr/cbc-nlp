@@ -7,7 +7,7 @@ import boto3
 from s3streaming import s3_open, deserialize
 
 
-logger = logging.getLogger('consileon.nlp.content')
+logger = logging.getLogger('cbc.nlp.content')
 
 
 class ContentHandler(ABC):

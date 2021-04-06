@@ -1,4 +1,4 @@
-import consileon.nlp.content as content
+import cbc.content as content
 
 h = content.FileSystemContentHandler("../../sample_data")
 

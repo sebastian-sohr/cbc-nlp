@@ -1,6 +1,6 @@
-import consileon.nlp.content as content
+import cbc.content as content
 from bs4 import BeautifulSoup as bs
-from consileon.nlp.rss_scraping import RssScraper
+from cbc.nlp.rss_scraping import RssScraper
 
 h = content.AwsS3ContentHandler("cbc-rss-test")
 raw_handler = content.AwsS3ContentHandler("cbc-rss-test", base_prefix="raw")

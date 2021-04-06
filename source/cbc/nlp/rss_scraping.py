@@ -1,5 +1,5 @@
 """
-consileon.nlp.rss_scraping
+cbc.nlp.rss_scraping
 =======================
 
 Read and store content from rss feeds
@@ -15,13 +15,12 @@ from urllib.request import Request, urlopen
 from xml.etree.ElementTree import Element
 from xml.etree.ElementTree import ParseError
 from tika import parser as tk_parser
-import consileon.nlp.content as content
 import ssl
 import gc
 
 ssl._create_default_https_context = ssl._create_unverified_context
 
-logger = logging.getLogger('consileon.nlp.rss_scraping')
+logger = logging.getLogger('cbc.nlp.rss_scraping')
 
 
 class RssScraper:

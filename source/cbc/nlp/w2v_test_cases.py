@@ -1,19 +1,20 @@
 """
-consileon.nlp.w2v_test_cases
+cbc.nlp.w2v_test_cases
 =============================
 
 Testcases for the framework "w2v_test_framework" which have been
 predefined for ease of use.
 """
-import consileon.nlp.pipeline as pipeline
+import cbc.nlp.base
+import cbc.pipeline as pipeline
 
 import nltk
 import spacy
 
-from consileon.nlp.w2v_const import SYNONYM, SIMILAR, NOT_SIMILAR, WORD_CALC, WORD_CALC_NEG, POS, NEG, IS, MOD
+from cbc.nlp.w2v_const import SYNONYM, SIMILAR, NOT_SIMILAR, WORD_CALC, WORD_CALC_NEG, POS, NEG, IS, MOD
 
 STANDARD_DE = {
-    MOD: pipeline.Lower() * pipeline.Remove() * pipeline.LemmaTokenizeText(),
+    MOD: cbc.nlp.base.Lower() * cbc.nlp.base.Remove() * cbc.nlp.base.LemmaTokenizeText(),
     SYNONYM: [
         ('Ehemann', 'Gatte'),
         ('Auto', 'Wagen'),
@@ -114,11 +115,11 @@ STANDARD_DE = {
 Standard testcases for German language.
 """
 
-de = pipeline.Append("_DE") * pipeline.Lower() * pipeline.Remove() * pipeline.LemmaTokenizeText()
-en = pipeline.Append("_EN") * \
-     pipeline.Lower() * \
-     pipeline.Remove(stopwords=nltk.corpus.stopwords.words('english') + ['-pron-']) * \
-     pipeline.LemmaTokenizeText(lemmatizer=spacy.load('en'))
+de = cbc.nlp.base.Append("_DE") * cbc.nlp.base.Lower() * cbc.nlp.base.Remove() * cbc.nlp.base.LemmaTokenizeText()
+en = cbc.nlp.base.Append("_EN") * \
+     cbc.nlp.base.Lower() * \
+     cbc.nlp.base.Remove(stopwords=nltk.corpus.stopwords.words('english') + ['-pron-']) * \
+     cbc.nlp.base.LemmaTokenizeText(lemmatizer=spacy.load('en'))
 
 STANDARD_DE_EN = {
     SYNONYM: [
@@ -144,10 +145,10 @@ STANDARD_DE_EN = {
 }
 
 STANDARD_EN = {
-    MOD: pipeline.Lower() *
-         pipeline.Remove(stopwords=pipeline.nltk.corpus.stopwords.words('english') + ['-pron-']) *
-         pipeline.LemmaTokenizeText(lemmatizer=pipeline.spacy.load("en")) *
-         pipeline.ReSub([r"[^\s]*>[^\s]+", r"html5[^\s]*", r"px[^\s]*", r">+read more", r'[^\s]+://[^\s]+'], " "),
+    MOD: cbc.nlp.base.Lower() *
+         cbc.nlp.base.Remove(stopwords=pipeline.nltk.corpus.stopwords.words('english') + ['-pron-']) *
+         cbc.nlp.base.LemmaTokenizeText(lemmatizer=pipeline.spacy.load("en")) *
+         cbc.nlp.base.ReSub([r"[^\s]*>[^\s]+", r"html5[^\s]*", r"px[^\s]*", r">+read more", r'[^\s]+://[^\s]+'], " "),
     SYNONYM: [
         ('ask', 'demand'),
         ('beautiful', 'pretty'),

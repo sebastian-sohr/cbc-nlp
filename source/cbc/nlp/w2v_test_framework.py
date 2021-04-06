@@ -1,5 +1,5 @@
 """
-consileon.nlp.w2v_test_framework
+cbc.nlp.w2v_test_framework
 =================================
 
 A framework meant to ease the testing of word2vec models.
@@ -16,7 +16,7 @@ Example:
 
 ::
 
-	from consileon.nlp.w2v_test_framework import TestW2vModel
+	from cbc.nlp.w2v_test_framework import TestW2vModel
 	ts = {
 		'synonym' : [
 			('huge', 'big'),
@@ -31,21 +31,21 @@ Example:
 
 """
 
-import consileon.nlp.pipeline as tkns
-import consileon.nlp.word2vec_tools as w2v
+import cbc.pipeline as tkns
+import cbc.nlp.word2vec_tools as w2v
 import pandas as pd
-from consileon.nlp.w2v_const import SYNONYM, SIMILAR, NOT_SIMILAR, WORD_CALC, WORD_CALC_NEG, POS, NEG, IS, MOD
+from cbc.nlp.w2v_const import SYNONYM, SIMILAR, NOT_SIMILAR, WORD_CALC, WORD_CALC_NEG, POS, NEG, IS, MOD
 
 
 class TestW2vModel:
     """
     Class to perform tests gensim-Word2Vec which are specified in a test set as
-    given in the module "consileon.nlp.w2v_test_sets". A test set is a collection
+    given in the module "cbc.nlp.w2v_test_sets". A test set is a collection
     of test cases of (currently two) different types. The test cases in the test set
     are grouped, giving the the test set the structure of a python dictionary with
     the group names as keys.
 
-    The (optional) entry with key 'modifier' (= consileon.nlp.w2v_const.MOD) in the
+    The (optional) entry with key 'modifier' (= cbc.nlp.w2v_const.MOD) in the
     test set plays a special role. It's a function which is applied to the strings
     or lists in the test cases. It's generally defined as the 'ItemModifier' which
     is used for nlp preparation of the input nlp of the word2vec model which will
@@ -93,7 +93,7 @@ class TestW2vModel:
 
         ::
 
-            from consileon.nlp.w2v_test_framework import TestW2vModel
+            from cbc.nlp.w2v_test_framework import TestW2vModel
             TestW2vModel(None).eval_pair(model, 'big', 'huge')
             # or
             cos = lambda a, b : TestW2vModel(None).eval_pair(model, a, b)
