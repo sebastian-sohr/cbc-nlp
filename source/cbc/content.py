@@ -5,6 +5,7 @@ from os import listdir
 from os.path import isfile
 import boto3
 from s3streaming import s3_open, deserialize
+import pathlib
 
 
 logger = logging.getLogger('cbc.nlp.content')
@@ -52,19 +53,19 @@ class FileSystemContentHandler(ContentHandler, ABC):
         base_folder='.',
         encoding='utf-8'
     ):
-        self.base_folder = base_folder
+        self.base_folder = pathlib.Path(base_folder)
         self.encoding = encoding
         super().__init__()
 
     def get_path(self, prefix=""):
-        return Path(self.base_folder + "/" + prefix)
+        return self.base_folder / prefix
 
     def get_full_path(self, key, prefix=""):
         assert(key is not None and len(key) > 0)
         return self.get_path(prefix) / key
 
     def list(self, prefix=""):
-        path = Path(self.base_folder + "/" + prefix)
+        path = self.get_path(prefix=prefix)
         path.mkdir(parents=True, exist_ok=True)
         return [f for f in listdir(path) if isfile(path / f)]
 
