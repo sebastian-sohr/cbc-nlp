@@ -57,6 +57,9 @@ import cbc.nlp.base        >>> import cbc.nlp.pipeline as pipeline
 
 Iterators may be used as *document input* for word2vec training.
 """
+import random
+import string
+
 import nltk
 import re
 import xml.etree.ElementTree as eT
@@ -301,7 +304,11 @@ class FileSourceGenerator(BaseGenerator):
             def do_tag(res_, _, __, ___):
                 return res_
         n = 0
-        for (prefix, key) in self.sourceFiles:
+        for ref in self.sourceFiles:
+            if isinstance(ref, tuple):
+                (prefix, key) = ref
+            elif isinstance(ref, str):
+                prefix, key = "", ref
             try:
                 result = self.get_object(prefix, key)
                 if n % self.logFreq == 0:
@@ -392,34 +399,35 @@ class Merge(IteratorModifier):
                 next_index = min(counts, key=counts.get)
                 if items[next_index]:
                     try:
-                        items[next_index] = next(iters[next_index])
-                        yield mask_output(items[next_index], next_index)
+                        next_item = next(iters[next_index])
+                        items[next_index] = True
+                        yield mask_output(next_item, next_index)
                     except StopIteration:
                         logger.debug("iter %i finished" % next_index)
-                        items[next_index] = None
+                        items[next_index] = False
                 counts[next_index] += steps[next_index]
 
         return Iterator(generator, is_tagged=is_tagged)
 
 
 class Subset(IteratorModifier):
-    def __init__(self, output_from=1, output_until=-1, distance=1):
+    def __init__(self, output_from=0, output_until=-1, distance=1, output_length=-1):
         self.outputFrom = output_from
         self.outputUntil = output_until
         self.distance = distance
+        self.outputLength = output_length
         super(Subset, self).__init__()
 
     def __call__(self, iterator):
         def generator():
             n = 0
+            out = 0
             for t in iterator:
-                if 0 < self.outputUntil < n + 1:
+                if 0 <= self.outputUntil <= n or 0 <= self.outputLength <= out:
                     break
-                if \
-                        n % self.distance == 0 \
-                        and \
-                        n + 1 >= self.outputFrom:
+                if n % self.distance == 0 and n >= self.outputFrom:
                     yield t
+                    out += 1
                 n += 1
 
         return Iterator(generator, is_tagged=iterator.is_tagged)
@@ -488,3 +496,19 @@ class Untag(IteratorModifier):
                 yield x[0]
 
         return Iterator(generator, is_tagged=False)
+
+
+class RandomStringsGenerator(ListGenerator):
+    def __init__(self, number_of_docs=10, length_of_words=5, number_of_words=15, is_tagged=False):
+        def gen_word():
+            all_letters = string.ascii_lowercase + string.ascii_uppercase
+            lc_letters = string.ascii_lowercase
+            return random.choice(all_letters) + \
+                ''.join(random.choice(lc_letters) for _ in range(length_of_words - 1))
+
+        def gen_doc():
+            d = ' '.join(gen_word() for _ in range(number_of_words))
+            return d[0].upper() + d[1:] + "."
+
+        my_list = [gen_doc() for _ in range(number_of_docs)]
+        super(RandomStringsGenerator, self).__init__(my_list, is_tagged=is_tagged)

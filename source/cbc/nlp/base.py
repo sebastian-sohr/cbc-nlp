@@ -1,6 +1,5 @@
 import ast
 import codecs
-import random
 import string
 import sys
 from collections import Counter
@@ -8,11 +7,8 @@ from collections import Counter
 import spacy
 import nltk
 import re
-import xml.etree.ElementTree as eT
 
-from cbc.pipeline import ItemModifier, IteratorModifier, Iterator, BaseGenerator, IteratorConsumer, ListGenerator, \
-    FileSourceGenerator, XmlParser
-from nltk import TreebankWordTokenizer
+from cbc.pipeline import ItemModifier, IteratorModifier, Iterator, BaseGenerator, IteratorConsumer
 from nltk.tokenize import TreebankWordTokenizer
 import logging
 
@@ -508,19 +504,3 @@ class CountTokens(IteratorConsumer):
         for tokens in iterator:
             count(tokens)
         return self
-
-
-class RandomStringsGenerator(ListGenerator):
-    def __init__(self, number_of_docs=10, length_of_words=5, number_of_words=15, is_tagged=False):
-        def gen_word():
-            all_letters = string.ascii_lowercase + string.ascii_uppercase
-            lc_letters = string.ascii_lowercase
-            return random.choice(all_letters) + \
-                ''.join(random.choice(lc_letters) for _ in range(length_of_words - 1))
-
-        def gen_doc():
-            d = ' '.join(gen_word() for _ in range(number_of_words))
-            return d[0].upper() + d[1:] + "."
-
-        my_list = [gen_doc() for _ in range(number_of_docs)]
-        super(RandomStringsGenerator, self).__init__(my_list, is_tagged=is_tagged)

@@ -10,7 +10,7 @@ S3_BUCKET = 'cbc-rss-test'
 BASE_PREFIX = 'unittest'
 S3_CONTENT_HANDLER = AwsS3ContentHandler(bucket=S3_BUCKET, base_prefix=BASE_PREFIX)
 
-PREFIX = "test"
+PREFIX = "content"
 TEXT_KEY = "f_" + strftime("%Y%m%d_%H%M%S") + ".txt"
 TEXT = "Test-File äöüÄÖÜ?€èéâ"
 
