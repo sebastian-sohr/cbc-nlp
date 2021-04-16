@@ -1,5 +1,5 @@
 """
-consileon.nlp.pdftools
+cbc.nlp.pdftools
 =======================
 
 Helper functions for transforming pdf documentents into plain text and wrap it in xml
@@ -12,7 +12,7 @@ from xml.etree.ElementTree import Element
 
 from tika import parser as tk_parser
 
-logger = logging.getLogger('consileon.nlp.pdftools')
+logger = logging.getLogger('cbc.nlp.pdftools')
 RE_REPLACE_UNWANTED_CHARS_IN_FN = re.compile(r"[ ()]")
 
 STANDARD_PROP_MAP = {
