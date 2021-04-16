@@ -8,7 +8,8 @@ from typing import Optional
 import boto3
 from s3streaming import s3_open, deserialize
 import pathlib
-
+import io
+import smart_open
 
 logger = logging.getLogger('cbc.nlp.content')
 
@@ -52,30 +53,30 @@ class ContentHandler(ABC):
         pass
 
     @abstractmethod
-    def get_text(self, key: str, prefix=""):
+    def get_text(self, key: str, prefix="") -> str:
         pass
 
     @abstractmethod
-    def save_bytes(self, key, bytes, prefix=""):
+    def save_bytes(self, key, byts: bytes, prefix=""):
         pass
 
     @abstractmethod
-    def get_bytes(self, key, prefix=""):
+    def get_bytes(self, key: str, prefix="") -> bytes:
         pass
 
     @abstractmethod
-    def iterate_lines(self, key, prefix=""):
+    def iterate_lines(self, key: str, prefix=""):
         pass
 
     @classmethod
-    def append_prefix(cls, base_prefix: str, prefix: str):
+    def append_prefix(cls, base_prefix: str, prefix: str) -> str:
         sep = ""
         if len(base_prefix) > 0 and len(prefix) > 0 and not base_prefix.endswith("/") and not prefix.startswith("/"):
             sep = "/"
         return base_prefix + sep + prefix
 
     @abstractmethod
-    def write_input_stream(cls, instream: io.RawIOBase, key: str, prefix=""):
+    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
         pass
 
 
@@ -112,7 +113,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
         text = self.get_full_path(key, prefix=prefix).read_text(encoding=self.encoding)
         return text
 
-    def save_bytes(self, key, bytes, prefix=""):
+    def save_bytes(self, key, byts: bytes, prefix=""):
         path = self.get_path(prefix=prefix)
         path.mkdir(parents=True, exist_ok=True)
         full_path = path / key
@@ -120,11 +121,11 @@ class FileSystemContentHandler(ContentHandler, ABC):
             f.write(bytes)
 
     def get_bytes(self, key, prefix=""):
-        bytes = self.get_full_path(key, prefix=prefix).read_bytes()
-        return bytes
+        bytes_ = self.get_full_path(key, prefix=prefix).read_bytes()
+        return bytes_
 
     def iterate_lines(self, key, prefix=""):
-       with open(self.get_full_path(key, prefix=prefix), 'r') as file:
+        with open(self.get_full_path(key, prefix=prefix), 'r') as file:
             for line in file:
                 yield line
             file.close()
@@ -181,17 +182,17 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         text = response['Body'].read().decode(response['ContentEncoding'])
         return text
 
-    def save_bytes(self, key, bytes, prefix=""):
+    def save_bytes(self, key, bytes_: bytes, prefix=""):
         self.client.put_object(
             Bucket=self.bucket,
             Key=self.get_full_key(key, prefix=prefix),
-            Body=bytes
+            Body=bytes_
         )
 
     def get_bytes(self, key, prefix=""):
         response = self.client.get_object(Bucket=self.bucket, Key=self.get_full_key(key, prefix=prefix))
-        bytes = response['Body'].read()
-        return bytes
+        bytes_ = response['Body'].read()
+        return bytes_
 
     def iterate_lines(self, key, prefix=""):
         with s3_open(
@@ -213,4 +214,3 @@ class AwsS3ContentHandler(ContentHandler, ABC):
                 if r is None:
                     break
                 fout.write(r)
-
