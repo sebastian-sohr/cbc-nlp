@@ -3,10 +3,39 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from os import listdir
 from os.path import isfile
+from typing import Optional
+
 import boto3
+import io
+import smart_open
 
 
 logger = logging.getLogger('consileon.nlp.content')
+
+
+class IteratorReader(io.RawIOBase):
+
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.leftover = []
+
+    def readinto(self, buffer: bytearray) -> Optional[int]:
+        size = len(buffer)
+        while len(self.leftover) < size:
+            try:
+                self.leftover.extend(next(self.iterator))
+            except StopIteration:
+                break
+
+        if len(self.leftover) == 0:
+            return 0
+
+        output, self.leftover = self.leftover[:size], self.leftover[size:]
+        buffer[:len(output)] = output
+        return len(output)
+
+    def readable(self) -> bool:
+        return True
 
 
 class ContentHandler(ABC):
@@ -15,23 +44,27 @@ class ContentHandler(ABC):
         super().__init__()
 
     @abstractmethod
-    def list(self, prefix):
+    def list(self, prefix: str) -> list:
         pass
 
     @abstractmethod
-    def save_text(self, key, text, prefix=""):
+    def save_text(self, key: str, text: str, prefix=""):
         pass
 
     @abstractmethod
-    def get_text(self, key, prefix=""):
+    def get_text(self, key: str, prefix=""):
         pass
 
     @classmethod
-    def append_prefix(cls, base_prefix, prefix):
+    def append_prefix(cls, base_prefix: str, prefix: str):
         sep = ""
         if len(base_prefix) > 0 and len(prefix) > 0 and not base_prefix.endswith("/") and not prefix.startswith("/"):
             sep = "/"
         return base_prefix + sep + prefix
+
+    @abstractmethod
+    def write_input_stream(cls, instream: io.RawIOBase, key: str, prefix=""):
+        pass
 
 
 class FileSystemContentHandler(ContentHandler, ABC):
@@ -69,13 +102,15 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         self,
         bucket=None,
         base_prefix='',
-        encoding='utf-8'
+        encoding='utf-8',
+        chunk_size=16384
     ):
         assert(bucket is not None)
         self.bucket = bucket
         self.base_prefix = base_prefix
         self.encoding = encoding
         self.client = boto3.client('s3')
+        self.chunk_size = chunk_size
         super().__init__()
 
     def list(self, prefix=""):
@@ -113,3 +148,15 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         response = self.client.get_object(Bucket=self.bucket, Key=full_key)
         text = response['Body'].read().decode(response['ContentEncoding'])
         return text
+
+    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
+        full_prefix = self.append_prefix(self.base_prefix, prefix)
+        full_key = self.append_prefix(full_prefix, key)
+
+        with smart_open.smart_open(self.bucket + "/" + full_key, 'wb') as fout:
+            while True:
+                r = instream.read(self.chunk_size)
+                if r is None:
+                    break
+                fout.write(r)
+
