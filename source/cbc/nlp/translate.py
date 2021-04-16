@@ -1,5 +1,5 @@
 """
-consileon.nlp.translate
+cbc.nlp.translate
 ========================
 
 Translate single words in texts literally using dictionaries.
@@ -8,7 +8,8 @@ Used e.g. for generating bilingual word2vec models.
 import re
 import random
 
-import consileon.nlp.pipeline as pipeline
+import cbc.nlp.base
+import cbc.pipeline as pipeline
 
 RE_LEFT_SIDE = re.compile(
     r"^\s*(?:\[[~ '\w.]+\])?(?:\([ '\w]+\))?\s*([ \'\-\w]+\.?)(?: +\([ \d\w.:]+\))?\s+(?:/.*/)$")
@@ -83,8 +84,8 @@ class PartiallyTranslate(pipeline.ItemModifier):
     def __init__(self,
                  dictionary,
                  translate_freq=5,
-                 orig_token_modifier=pipeline.Append("_ORIG"),
-                 tokenize_translated=pipeline.Append("_TRANS") * pipeline.TokenizeText()
+                 orig_token_modifier=cbc.nlp.base.Append("_ORIG"),
+                 tokenize_translated=cbc.nlp.base.Append("_TRANS") * cbc.nlp.base.TokenizeText()
                  ):
         self.dictionary = dictionary
         self.translateFreq = translate_freq

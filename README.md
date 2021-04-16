@@ -1,5 +1,8 @@
 # cbc-nlp : The "consileon NLP framework"
 
+## Prerequisites
+- Install the requirements specified in [requirements.txt](requirements.txt)
+
 ## Why Consileon NLP Framework?
 NLP models are developed based on text sources which contain (long) sequences of texts. A major part of the development is the pre-processing of input data. Most effort and time is spent on transforming text into other objects (lists of tokens) in order to be handled by NLP algorithms. This is where Consileon’s NLP Framework comes into play. 
 

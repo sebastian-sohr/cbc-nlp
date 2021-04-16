@@ -1,9 +1,9 @@
 """
-consileon.nlp.wikitools
+cbc.nlp.wikitools
 ========================
 
 Construct a corpus from a Wikipedia (or other MediaWiki-based) database dump.
-Create text streams compatible with "consileon.nlp.pipeline" which can be
+Create text streams compatible with "cbc.nlp.pipeline" which can be
 feed (e.g.) into generator for word2vec models.
 
 The parts extracting the (very big) wiki source files are taken from the
@@ -16,7 +16,7 @@ import multiprocessing
 import re
 from xml.etree.cElementTree import iterparse  # LXML isn't faster, so let's go with the built-in solution
 
-import consileon.nlp.pipeline as tkns
+import cbc.pipeline as tkns
 from gensim import utils
 # cannot import whole gensim.corpora, because that imports wikicorpus...
 from gensim.corpora.dictionary import Dictionary
@@ -24,7 +24,7 @@ from gensim.corpora.textcorpus import TextCorpus
 
 import codecs
 
-logger = logging.getLogger('de.consileon.nlp.wikitools')
+logger = logging.getLogger('de.cbc.nlp.wikitools')
 
 # ignore articles shorter than ARTICLE_MIN_WORDS characters (after full preprocessing)
 ARTICLE_MIN_WORDS = 50

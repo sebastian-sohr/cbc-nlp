@@ -1,8 +1,8 @@
 """
-consileon.nlp.w2v_const
+cbc.nlp.w2v_const
 ========================
 
-Constants used by "consileon.nlp.w2v_test_framework" and "w2v_test_cases".
+Constants used by "cbc.nlp.w2v_test_framework" and "w2v_test_cases".
 """
 SYNONYM = "synonym"
 SIMILAR = "similar"
