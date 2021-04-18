@@ -1,14 +1,14 @@
 import ast
 import codecs
 import string
-import sys
 from collections import Counter
 
 import spacy
 import nltk
 import re
 
-from cbc.pipeline import ItemModifier, IteratorModifier, Iterator, BaseGenerator, IteratorConsumer
+from cbc.pipeline import \
+    ItemModifier, IteratorModifier, Iterator, IteratorConsumer, LineSourceIterator, STANDARD_SEPARATOR
 from nltk.tokenize import TreebankWordTokenizer
 import logging
 
@@ -38,8 +38,6 @@ RE_WHITESPACE = re.compile(r"\s+")
 LEMMATIZE_MAX_SIZE = 10000
 
 LEMMATIZE_MAX_CHUNK_SIZE = 100000
-
-STANDARD_SEPARATOR = ":-):-|:-("
 
 VOWELS = "aeiouäöüyAEIOUÄÖÜY"
 CONSONANTS = "bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXY"
@@ -296,71 +294,6 @@ class SplitText(IteratorModifier):
                             yield p
                         n += 1
         return Iterator(generator, is_tagged=other.is_tagged)
-
-
-class LineSourceIterator(BaseGenerator):
-    def __init__(self,
-                 input_file,
-                 log_freq=1000,
-                 output_freq=1,
-                 tag_separator=STANDARD_SEPARATOR,
-                 input_encoding='utf-8'
-                 ):
-        self.input_file = input_file
-        self.logFreq = log_freq
-        self.outputFreq = output_freq
-        self.tag_separator = tag_separator
-        self.input_encoding = input_encoding
-        super(LineSourceIterator, self).__init__()
-        self.get_line = None
-        self.handle_first_line()
-
-    def handle_first_line(self):
-        first_line = None
-        try:
-            if self.input_encoding is None:
-                file = open(self.input_file, 'r')
-            else:
-                file = open(self.input_file, 'r', encoding=self.input_encoding)
-            for first_line in file:
-                break
-        except Exception:
-            logger.error("could not read from file %s" % self.input_file, sys.exc_info()[0])
-            raise
-        if first_line is None:
-            raise Exception("input file %s is empty" % self.input_file)
-        line_l = first_line.split(self.tag_separator)
-        if len(line_l) == 1:
-            self.is_tagged = False
-
-            def get_line(line):
-                return line
-        else:
-            self.is_tagged = True
-
-            def get_line(line):
-                ll = line.split(self.tag_separator)
-                return ll[0], ast.literal_eval(ll[1])
-        self.get_line = get_line
-
-    def __call__(self):
-        if self.input_encoding is None:
-            file = open(self.input_file, 'r')
-        else:
-            file = open(self.input_file, 'r', encoding=self.input_encoding)
-        try:
-            c_in = 0
-            c_out = 0
-            for line in file:
-                if c_in % self.outputFreq == 0:
-                    if c_out % self.logFreq == 0:
-                        logger.debug("%s read=%i, ouput=%i\n" % (self.input_file, c_in, c_out))
-                    yield self.get_line(line)
-                    c_out += 1
-                c_in += 1
-            logger.debug("ready: %s read=%i, ouput=%i\n" % (self.input_file, c_in, c_out))
-        except IOError:
-            logger.error("could not read %s" % self.input_file, exc_info=True)
 
 
 class LineSourceTokenizer(LineSourceIterator):

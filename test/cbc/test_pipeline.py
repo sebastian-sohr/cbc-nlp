@@ -32,15 +32,23 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(INT_LIST, l)
 
     def test_base_modifier(self):
+        gen = pipeline.ListGenerator(INT_LIST)
         m = pipeline.ItemModifier(f=lambda i: i+1)
         self.assertEqual(5, m(4))
         self.assertEqual(6, (m*m)(4))
-        p = m ** pipeline.ListGenerator(INT_LIST)
+        p = m ** gen
         l = [i for i in p]
         self.assertEqual([i+1 for i in INT_LIST], l)
-        q = m ** m ** pipeline.ListGenerator(INT_LIST)
+        q = m ** m ** gen
         l2 = [i for i in q]
-        self.assertEqual([i + 2 for i in INT_LIST], l)
+        self.assertEqual([i + 2 for i in INT_LIST], l2)
+        even = pipeline.ItemModifier(f=lambda i: i if i % 2 == 0 else None, tag_set=(True, True))
+        p2 = even ** gen
+        l3 = [i for i in p2]
+        compare = [(INT_LIST[i], [i]) for i in range(0, len(INT_LIST)) if INT_LIST[i] % 2 == 0]
+        for i in range(0, len(compare)):
+            compare[i][1].append(i)
+        self.assertEqual(l3, compare)
 
     def test_merge(self):
         l_0 = [i for i in INT_LIST if i % 2 == 0]
@@ -111,9 +119,9 @@ class PipelineTestCase(unittest.TestCase):
         ]
         self.assertEqual(len(l_), i)
         i = 0
-        p = pipeline.FileSourceGenerator(l_, content_handler=FS_CONTENT_HANDLER)
-        for text in p:
-            self.assertEqual(text, fn_map[l_[i][1]])
+        p = pipeline.FileSourceGenerator(l_, content_handler=FS_CONTENT_HANDLER, tag_set=(True, True, True))
+        for item in p:
+            self.assertEqual(item, (fn_map[l_[i][1]], [PREFIX, l_[i][1], i]))
             i += 1
         content_handler = FileSystemContentHandler(base_folder=BASE_DIR / PREFIX)
         l2 = [
@@ -123,8 +131,8 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(len(l2), i)
         i = 0
         p = pipeline.FileSourceGenerator(l2, content_handler=content_handler)
-        for text in p:
-            self.assertEqual(text, fn_map[l2[i]])
+        for item in p:
+            self.assertEqual(item, fn_map[l2[i]])
             i += 1
 
     def test_FileSourceGenerator_s3(self):
@@ -144,9 +152,9 @@ class PipelineTestCase(unittest.TestCase):
         ]
         self.assertEqual(len(l), i)
         i = 0
-        p = pipeline.FileSourceGenerator(l, content_handler=S3_CONTENT_HANDLER)
-        for text in p:
-            self.assertEqual(text, fn_map[l[i][1]])
+        p = pipeline.FileSourceGenerator(l, content_handler=S3_CONTENT_HANDLER, tag_set=(False, True, False))
+        for item in p:
+            self.assertEqual(item, (fn_map[l[i][1]], [l[i][1]]))
             i += 1
         l2 = [
             f for f in S3_CONTENT_HANDLER.list()
@@ -193,9 +201,9 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(len(l_b), i)
         i = 0
         p = pipeline.XmlParser(content_tag="b") ** \
-            pipeline.FileSourceGenerator(l_b, content_handler=FS_CONTENT_HANDLER)
-        for text in p:
-            self.assertEqual(text, fn_map[l_b[i][1]])
+            pipeline.FileSourceGenerator(l_b, content_handler=FS_CONTENT_HANDLER, tag_set=(False, False, True))
+        for item in p:
+            self.assertEqual(item, (fn_map[l_b[i][1]], [i]))
             i += 1
 
 
