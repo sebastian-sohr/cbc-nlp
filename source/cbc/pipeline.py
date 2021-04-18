@@ -57,8 +57,10 @@ import cbc.nlp.base        >>> import cbc.nlp.pipeline as pipeline
 
 Iterators may be used as *document input* for word2vec training.
 """
+import ast
 import random
 import string
+import sys
 
 import nltk
 import re
@@ -66,9 +68,11 @@ import xml.etree.ElementTree as eT
 
 import logging
 import numbers
+from itertools import compress
 
 import cbc.content as content
 
+STANDARD_SEPARATOR = ":-):-|:-("
 
 logger = logging.getLogger('cbc.pipeline')
 
@@ -189,28 +193,49 @@ import cbc.nlp.base        >>> import cbc.nlp.pipeline as pipeline
 
     """
 
-    @staticmethod
-    def __create_call_function(f, is_tagged):
-        if is_tagged:
-            def cf(x):
-                f_x0 = f(x[0])
-                if f_x0 is not None:
-                    return f_x0, x[1]
-                else:
-                    return None
-
-            result = cf
-        else:
-            result = f
-        return result
-
-    def __init__(self, f=lambda x: x):
+    def __init__(
+            self,
+            f=lambda x: x,
+            tag_set=(False, False) # Tag with: (total, output)
+    ):
         """
         Initialize object with function operating on item
 
         :f (function): the function operating on the items
         """
+        self.tag_set = tag_set
         self.f = f
+
+    @staticmethod
+    def __create_call_function(f, is_tagged, tag_set):
+        if is_tagged:
+            if any(tag_set):
+                def cf(x, total_, output_):
+                    f_x0 = f(x[0])
+                    if f_x0 is not None:
+                        x[1].extend(compress((total_, output_), tag_set))
+                        return f_x0, x[1]
+                    else:
+                        return None
+            else:
+                def cf(x, total_, output_):
+                    f_x0 = f(x[0])
+                    if f_x0 is not None:
+                        return f_x0, x[1]
+                    else:
+                        return None
+        else:
+            if any(tag_set):
+                def cf(x, total_, output_):
+                    f_x0 = f(x)
+                    if f_x0 is not None:
+                        return f_x0, list(compress((total_, output_), tag_set))
+                    else:
+                        return None
+            else:
+                def cf(x, total_, output_):
+                    return f(x)
+        return cf
 
     def __call__(self, x):
         return self.f(x)
@@ -222,15 +247,20 @@ import cbc.nlp.base        >>> import cbc.nlp.pipeline as pipeline
         return self.apply_to_iterator(other)
 
     def apply_to_iterator(self, iterator):
-        cf = ItemModifier.__create_call_function(self.f, iterator.is_tagged)
+        cf = ItemModifier.__create_call_function(self.f, iterator.is_tagged, self.tag_set)
 
         def generator():
+            total = 0
+            output = 0
             for x in iterator:
                 if x is not None:
-                    x = cf(x)
+                    x = cf(x, total, output)
                 if x is not None:
+                    output += 1
                     yield x
-        return Iterator(generator, iterator.is_tagged)
+                total += 1
+
+        return Iterator(generator, iterator.is_tagged or any(self.tag_set))
 
 
 class MulItemModifier(ItemModifier):
@@ -265,15 +295,14 @@ class FileSourceGenerator(BaseGenerator):
             self,
             source_files,
             log_freq=1000,
-            is_tagged=False,
-            tag_rule=0,  # 0 = "filename", 1 = "number"
+            tag_set=(False, False, False), # Tag is: prefix (channel), key (file name), number
             content_handler=None,
             base_folder='.',
             file_type=str
         ):
         self.sourceFiles = source_files
         self.logFreq = log_freq
-        self.tag_rule = tag_rule
+        self.tag_set = tag_set
         self.num_source_files = len(self.sourceFiles)
         if content_handler is None:
             self.contentHandler = content.FileSystemContentHandler(base_folder=base_folder)
@@ -289,17 +318,13 @@ class FileSourceGenerator(BaseGenerator):
                 return self.contentHandler.get_bytes(key, prefix=prefix)
 
         self.get_object = get_object
-        super(FileSourceGenerator, self).__init__(is_tagged=is_tagged)
+        super(FileSourceGenerator, self).__init__(is_tagged=any(self.tag_set))
 
     def __call__(self):
         do_tag = None
         if self.is_tagged:
-            if self.tag_rule == 0:
-                def do_tag(res_, p_, f_, _):
-                    return res_, [p_, f_]
-            elif self.tag_rule == 1:
-                def do_tag(res_, _, __, n_):
-                    return res_, [n_]
+            def do_tag(res_, p_, f_, n_):
+                return res_, list(compress((p_, f_, n_), self.tag_set))
         else:
             def do_tag(res_, _, __, ___):
                 return res_
@@ -512,3 +537,65 @@ class RandomStringsGenerator(ListGenerator):
 
         my_list = [gen_doc() for _ in range(number_of_docs)]
         super(RandomStringsGenerator, self).__init__(my_list, is_tagged=is_tagged)
+
+
+class LineSourceIterator(BaseGenerator):
+    def __init__(
+            self,
+            file_key,
+            prefix="",
+            content_handler=None,
+            base_folder=".",
+            input_encoding=None,
+            log_freq=1000,
+            output_freq=1
+    ):
+        self.file_key = file_key
+        if content_handler is None:
+            self.content_handler = content.FileSystemContentHandler(
+                base_folder=base_folder
+            )
+            if input_encoding is not None:
+                self.content_handler.encoding = input_encoding
+        else:
+            self.content_handler = content_handler
+        self.prefix = prefix
+        self.log_freq=log_freq
+        self.output_freq=output_freq
+        self.get_line = lambda line:line
+        super(LineSourceIterator, self).__init__()
+
+    def __call__(self):
+        c_in = 0
+        c_out = 0
+        for line in self.content_handler.iterate_lines(self.file_key, prefix=self.prefix):
+            if c_in % self.output_freq == 0:
+                if c_out % self.log_freq == 0:
+                    logger.debug("read=%i, ouput=%i\n" % (c_in, c_out))
+                yield self.get_line(line)
+                c_out += 1
+            c_in += 1
+        logger.debug("ready: read=%i, ouput=%i\n" % (c_in, c_out))
+
+
+class TaggedLineSourceIterator(LineSourceIterator):
+    def __init__(
+        self,
+        input_file,
+        tag_separator=STANDARD_SEPARATOR,
+        **kwargs
+    ):
+        self.tag_separator = tag_separator
+        super(TaggedLineSourceIterator, self).__init__(input_file, **kwargs)
+
+        first_line = next(self.content_handler.iterate_lines(input_file, prefix=self.prefix))
+        if first_line is not None:
+            line_l = first_line.split(self.tag_separator)
+            if len(line_l) > 1:
+                self.is_tagged = True
+
+                def get_line(line):
+                    ll = line.split(self.tag_separator)
+                    return ll[0], ast.literal_eval(ll[1])
+
+                self.get_line = get_line
