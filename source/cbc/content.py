@@ -16,20 +16,21 @@ logger = logging.getLogger('cbc.nlp.content')
 
 class IteratorReader(io.RawIOBase):
 
-    def __init__(self, iterator):
+    def __init__(self, iterator, to_bytes_function=lambda x: x):
         self.iterator = iterator
+        self.to_bytes_function = to_bytes_function
         self.leftover = []
 
     def readinto(self, buffer: bytearray) -> Optional[int]:
         size = len(buffer)
         while len(self.leftover) < size:
             try:
-                self.leftover.extend(next(self.iterator))
+                self.leftover.extend(self.to_bytes_function(next(self.iterator)))
             except StopIteration:
                 break
 
         if len(self.leftover) == 0:
-            return 0
+            return None
 
         output, self.leftover = self.leftover[:size], self.leftover[size:]
         buffer[:len(output)] = output
@@ -41,7 +42,11 @@ class IteratorReader(io.RawIOBase):
 
 class ContentHandler(ABC):
 
-    def __init__(self):
+    def __init__(
+        self,
+        chunk_size=16384
+    ):
+        self.chunk_size = chunk_size
         super().__init__()
 
     @abstractmethod
@@ -84,11 +89,12 @@ class FileSystemContentHandler(ContentHandler, ABC):
     def __init__(
         self,
         base_folder='.',
-        encoding='utf-8'
+        encoding='utf-8',
+        **kwargs
     ):
         self.base_folder = pathlib.Path(base_folder)
         self.encoding = encoding
-        super().__init__()
+        super().__init__(**kwargs)
 
     def get_path(self, prefix=""):
         return self.base_folder / prefix
@@ -118,7 +124,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
         path.mkdir(parents=True, exist_ok=True)
         full_path = path / key
         with full_path.open("wb") as f:
-            f.write(bytes)
+            f.write(byts)
 
     def get_bytes(self, key, prefix=""):
         bytes_ = self.get_full_path(key, prefix=prefix).read_bytes()
@@ -130,6 +136,14 @@ class FileSystemContentHandler(ContentHandler, ABC):
                 yield line
             file.close()
 
+    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
+        with open(self.get_full_path(key, prefix=prefix), 'wb') as fout:
+            while True:
+                r = instream.read(self.chunk_size)
+                if r is None:
+                    break
+                fout.write(r)
+
 
 class AwsS3ContentHandler(ContentHandler, ABC):
     def __init__(
@@ -137,15 +151,14 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         bucket=None,
         base_prefix='',
         encoding='utf-8',
-        chunk_size=16384
+        **kwargs
     ):
         assert(bucket is not None)
         self.bucket = bucket
         self.base_prefix = base_prefix
         self.encoding = encoding
         self.client = boto3.client('s3')
-        self.chunk_size = chunk_size
-        super().__init__()
+        super().__init__(**kwargs)
 
     def get_full_key(self, key, prefix=""):
         return self.append_prefix(self.append_prefix(self.base_prefix, prefix), key)
