@@ -3,13 +3,13 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from os import listdir
 from os.path import isfile
-from typing import Optional
+from typing import Optional, Union
 
 import boto3
 from s3streaming import s3_open, deserialize
-import pathlib
 import io
 import smart_open
+import re
 
 logger = logging.getLogger('cbc.nlp.content')
 
@@ -44,9 +44,13 @@ class ContentHandler(ABC):
 
     def __init__(
         self,
-        chunk_size=16384
+        chunk_size=16384,
+        base_prefix: Union[str, Path] = '',
+        encoding='utf-8'
     ):
         self.chunk_size = chunk_size
+        self.base_prefix = base_prefix
+        self.encoding = encoding
         super().__init__()
 
     @abstractmethod
@@ -87,14 +91,11 @@ class ContentHandler(ABC):
 
 class FileSystemContentHandler(ContentHandler, ABC):
     def __init__(
-        self,
-        base_folder='.',
-        encoding='utf-8',
-        **kwargs
+            self,
+            **kwargs
     ):
-        self.base_folder = pathlib.Path(base_folder)
-        self.encoding = encoding
         super().__init__(**kwargs)
+        self.base_folder = Path(self.base_prefix)
 
     def get_path(self, prefix=""):
         return self.base_folder / prefix
@@ -149,16 +150,13 @@ class AwsS3ContentHandler(ContentHandler, ABC):
     def __init__(
         self,
         bucket=None,
-        base_prefix='',
-        encoding='utf-8',
         **kwargs
     ):
         assert(bucket is not None)
-        self.bucket = bucket
-        self.base_prefix = base_prefix
-        self.encoding = encoding
-        self.client = boto3.client('s3')
         super().__init__(**kwargs)
+        self.base_prefix = re.sub(r"^\./", "", str(self.base_prefix))
+        self.bucket = bucket
+        self.client = boto3.client('s3')
 
     def get_full_key(self, key, prefix=""):
         return self.append_prefix(self.append_prefix(self.base_prefix, prefix), key)
@@ -221,9 +219,10 @@ class AwsS3ContentHandler(ContentHandler, ABC):
         full_prefix = self.append_prefix(self.base_prefix, prefix)
         full_key = self.append_prefix(full_prefix, key)
 
-        with smart_open.smart_open(self.bucket + "/" + full_key, 'wb') as fout:
+        with smart_open.open("s3://" + self.bucket + "/" + full_key, 'wb', transport_params={'client': self.client}) as fout:
             while True:
                 r = instream.read(self.chunk_size)
                 if r is None:
                     break
                 fout.write(r)
+            fout.close()

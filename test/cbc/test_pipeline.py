@@ -1,15 +1,15 @@
 import unittest
 import cbc.pipeline as pipeline
 from time import strftime
-import pathlib
+from pathlib import Path
 from cbc.content import FileSystemContentHandler, AwsS3ContentHandler
 import re
 
 INT_LIST = list(range(0, 10))
 
-BASE_DIR = pathlib.Path("../../temp/unittest")
+BASE_DIR = Path("../../temp/unittest")
 
-FS_CONTENT_HANDLER = FileSystemContentHandler(base_folder=BASE_DIR)
+FS_CONTENT_HANDLER = FileSystemContentHandler(base_prefix=BASE_DIR)
 
 S3_BUCKET = 'cbc-rss-test'
 BASE_PREFIX = 'unittest'
@@ -123,7 +123,7 @@ class PipelineTestCase(unittest.TestCase):
         for item in p:
             self.assertEqual(item, (fn_map[l_[i][1]], [PREFIX, l_[i][1], i]))
             i += 1
-        content_handler = FileSystemContentHandler(base_folder=BASE_DIR / PREFIX)
+        content_handler = FileSystemContentHandler(base_prefix=BASE_DIR / PREFIX)
         l2 = [
             f for f in content_handler.list()
             if re.match(r".*test_fsg_%s_\d+\.txt" % ts, f)
