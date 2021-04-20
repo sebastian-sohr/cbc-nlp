@@ -132,7 +132,7 @@ class FileSystemContentHandler(ContentHandler, ABC):
         return bytes_
 
     def iterate_lines(self, key, prefix=""):
-        with open(self.get_full_path(key, prefix=prefix), 'r') as file:
+        with open(self.get_full_path(key, prefix=prefix), 'r', encoding=self.encoding) as file:
             for line in file:
                 yield line
             file.close()
