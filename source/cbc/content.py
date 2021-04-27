@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from os import listdir
 from os.path import isfile
-from typing import Optional, Union
+from typing import Optional, Union, Any
 
 import boto3
 from s3streaming import s3_open, deserialize
@@ -12,6 +12,8 @@ import smart_open
 import re
 
 logger = logging.getLogger('cbc.nlp.content')
+
+DEFAULT_CHUNK_SIZE = 16384
 
 
 class IteratorReader(io.RawIOBase):
@@ -44,7 +46,7 @@ class ContentHandler(ABC):
 
     def __init__(
         self,
-        chunk_size=16384,
+        chunk_size=DEFAULT_CHUNK_SIZE,
         base_prefix: Union[str, Path] = '',
         encoding='utf-8'
     ):
@@ -85,8 +87,18 @@ class ContentHandler(ABC):
         return base_prefix + sep + prefix
 
     @abstractmethod
-    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
+    def write_input_stream(self, in_stream: io.RawIOBase, key: str, prefix=""):
         pass
+
+    def write_iterator(self, iterator, key: str, prefix="", to_bytes_function=None):
+        if to_bytes_function is None:
+            def to_bytes_function_(x: Any):
+                return str(x).encode(self.encoding)
+        else:
+            to_bytes_function_ = to_bytes_function
+
+        i_reader = IteratorReader(iterator, to_bytes_function=to_bytes_function_)
+        self.write_input_stream(i_reader, key, prefix=prefix)
 
 
 class FileSystemContentHandler(ContentHandler, ABC):
@@ -137,10 +149,10 @@ class FileSystemContentHandler(ContentHandler, ABC):
                 yield line
             file.close()
 
-    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
+    def write_input_stream(self, in_stream: io.RawIOBase, key: str, prefix=""):
         with open(self.get_full_path(key, prefix=prefix), 'wb') as fout:
             while True:
-                r = instream.read(self.chunk_size)
+                r = in_stream.read(self.chunk_size)
                 if r is None:
                     break
                 fout.write(r)
@@ -215,13 +227,17 @@ class AwsS3ContentHandler(ContentHandler, ABC):
                 yield line
             file.close()
 
-    def write_input_stream(self, instream: io.RawIOBase, key: str, prefix=""):
+    def write_input_stream(self, in_stream: io.RawIOBase, key: str, prefix=""):
         full_prefix = self.append_prefix(self.base_prefix, prefix)
         full_key = self.append_prefix(full_prefix, key)
 
-        with smart_open.open("s3://" + self.bucket + "/" + full_key, 'wb', transport_params={'client': self.client}) as fout:
+        with smart_open.open(
+                "s3://%s/%s" % (self.bucket, full_key),
+                'wb',
+                transport_params={'client': self.client}
+        ) as fout:
             while True:
-                r = instream.read(self.chunk_size)
+                r = in_stream.read(self.chunk_size)
                 if r is None:
                     break
                 fout.write(r)

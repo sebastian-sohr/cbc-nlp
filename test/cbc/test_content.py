@@ -1,6 +1,6 @@
 import unittest
 from time import strftime
-import pathlib
+import copy
 from cbc.content import FileSystemContentHandler, AwsS3ContentHandler, IteratorReader
 
 BASE_DIR = "../../temp/unittest"
@@ -16,6 +16,7 @@ TEXT = "Test-File äöüÄÖÜ?€èéâ"
 
 BYTES_KEY = "b_" + strftime("%Y%m%d_%H%M%S")
 BYTES_STREAM_KEY = "bs_" + strftime("%Y%m%d_%H%M%S")
+BYTES_STREAM_KEY_2 = "bs2_" + strftime("%Y%m%d_%H%M%S")
 BYTES = "Test äöüÄÖÜ?€èéâ".encode('utf-8')
 
 
@@ -44,6 +45,12 @@ class FsContentHandlerTestCase(unittest.TestCase):
         iter_reader = IteratorReader(iter())
         self.content_handler.write_input_stream(iter_reader, BYTES_STREAM_KEY, prefix=PREFIX)
         bytes_ = self.content_handler.get_bytes(BYTES_STREAM_KEY, prefix=PREFIX)
+        self.assertEqual(bytes_, compare)
+        content_handler_ = copy.copy(self.content_handler)
+        content_handler_.chunk_size = 3
+        iter_reader = IteratorReader(iter())
+        content_handler_.write_input_stream(iter_reader, BYTES_STREAM_KEY_2, prefix=PREFIX)
+        bytes_ = content_handler_.get_bytes(BYTES_STREAM_KEY_2, prefix=PREFIX)
         self.assertEqual(bytes_, compare)
 
 

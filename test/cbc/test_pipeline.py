@@ -225,6 +225,7 @@ class PipelineTestCase(unittest.TestCase):
             sig.update(line.encode('utf-8'))
         compare_hash = sig.hexdigest()
         self.assertEqual(orig_hash, compare_hash)
+        content_handler = S3_CONTENT_HANDLER
 
 
 if __name__ == '__main__':
