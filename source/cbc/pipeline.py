@@ -553,16 +553,16 @@ class LineSourceIterator(BaseGenerator):
         self.file_key = file_key
         if content_handler is None:
             self.content_handler = content.FileSystemContentHandler(
-                base_folder=base_folder
+                base_prefix=base_folder
             )
             if input_encoding is not None:
                 self.content_handler.encoding = input_encoding
         else:
             self.content_handler = content_handler
         self.prefix = prefix
-        self.log_freq=log_freq
-        self.output_freq=output_freq
-        self.get_line = lambda line:line
+        self.log_freq = log_freq
+        self.output_freq = output_freq
+        self.get_line = lambda line: line
         super(LineSourceIterator, self).__init__()
 
     def __call__(self):

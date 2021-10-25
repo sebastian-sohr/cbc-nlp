@@ -1,15 +1,16 @@
 import unittest
 import cbc.pipeline as pipeline
 from time import strftime
-import pathlib
-from cbc.content import FileSystemContentHandler, AwsS3ContentHandler
+from pathlib import Path
+from cbc.content import FileSystemContentHandler, AwsS3ContentHandler, IteratorReader
 import re
+from hashlib import md5
 
 INT_LIST = list(range(0, 10))
 
-BASE_DIR = pathlib.Path("../../temp/unittest")
+BASE_DIR = Path("../../temp/unittest")
 
-FS_CONTENT_HANDLER = FileSystemContentHandler(base_folder=BASE_DIR)
+FS_CONTENT_HANDLER = FileSystemContentHandler(base_prefix=BASE_DIR)
 
 S3_BUCKET = 'cbc-rss-test'
 BASE_PREFIX = 'unittest'
@@ -18,6 +19,10 @@ S3_CONTENT_HANDLER = AwsS3ContentHandler(bucket=S3_BUCKET, base_prefix=BASE_PREF
 PREFIX = "pipeline"
 TEXT_KEY = "f_" + strftime("%Y%m%d_%H%M%S") + ".txt"
 TEXT = "Test-File äöüÄÖÜ?€èéâ"
+
+TOKEN_FILE = "../../examples/sample_data/rss_tokens.txt"
+
+STREAM_KEY = "s_" + strftime("%Y%m%d_%H%M%S") + ".txt"
 
 
 class PipelineTestCase(unittest.TestCase):
@@ -123,7 +128,7 @@ class PipelineTestCase(unittest.TestCase):
         for item in p:
             self.assertEqual(item, (fn_map[l_[i][1]], [PREFIX, l_[i][1], i]))
             i += 1
-        content_handler = FileSystemContentHandler(base_folder=BASE_DIR / PREFIX)
+        content_handler = FileSystemContentHandler(base_prefix=BASE_DIR / PREFIX)
         l2 = [
             f for f in content_handler.list()
             if re.match(r".*test_fsg_%s_\d+\.txt" % ts, f)
@@ -205,6 +210,22 @@ class PipelineTestCase(unittest.TestCase):
         for item in p:
             self.assertEqual(item, (fn_map[l_b[i][1]], [i]))
             i += 1
+
+    def test_stream_to_s3(self):
+        p = pipeline.LineSourceIterator(TOKEN_FILE)
+        sig = md5()
+        for line in p:
+            sig.update(line.encode('utf-8'))
+        orig_hash = sig.hexdigest()
+        p.__iter__()
+        p_reader = IteratorReader(p, to_bytes_function=lambda s: s.encode('utf-8'))
+        S3_CONTENT_HANDLER.write_input_stream(p_reader, STREAM_KEY, prefix=PREFIX)
+        sig = md5()
+        for line in S3_CONTENT_HANDLER.iterate_lines(STREAM_KEY, prefix=PREFIX):
+            sig.update(line.encode('utf-8'))
+        compare_hash = sig.hexdigest()
+        self.assertEqual(orig_hash, compare_hash)
+        content_handler = S3_CONTENT_HANDLER
 
 
 if __name__ == '__main__':

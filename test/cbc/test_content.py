@@ -1,10 +1,10 @@
 import unittest
 from time import strftime
-import pathlib
-from cbc.content import FileSystemContentHandler, AwsS3ContentHandler
+import copy
+from cbc.content import FileSystemContentHandler, AwsS3ContentHandler, IteratorReader
 
-BASE_DIR = pathlib.Path("../../temp/unittest/content")
-FS_CONTENT_HANDLER = FileSystemContentHandler(base_folder=BASE_DIR)
+BASE_DIR = "../../temp/unittest"
+FS_CONTENT_HANDLER = FileSystemContentHandler(base_prefix=BASE_DIR)
 
 S3_BUCKET = 'cbc-rss-test'
 BASE_PREFIX = 'unittest'
@@ -15,52 +15,48 @@ TEXT_KEY = "f_" + strftime("%Y%m%d_%H%M%S") + ".txt"
 TEXT = "Test-File äöüÄÖÜ?€èéâ"
 
 BYTES_KEY = "b_" + strftime("%Y%m%d_%H%M%S")
+BYTES_STREAM_KEY = "bs_" + strftime("%Y%m%d_%H%M%S")
+BYTES_STREAM_KEY_2 = "bs2_" + strftime("%Y%m%d_%H%M%S")
 BYTES = "Test äöüÄÖÜ?€èéâ".encode('utf-8')
 
 
 class FsContentHandlerTestCase(unittest.TestCase):
-    def test_create_text_file(self):
-        FS_CONTENT_HANDLER.save_text(TEXT_KEY, TEXT, prefix=PREFIX)
-        self.assertTrue((BASE_DIR / PREFIX / TEXT_KEY).is_file())
+    def __init__(self, *args, **kwargs):
+        self.content_handler = kwargs.pop("content_handler", FS_CONTENT_HANDLER)
+        super().__init__(*args, **kwargs)
 
-    def test_create_binary_file(self):
-        FS_CONTENT_HANDLER.save_bytes(BYTES_KEY, BYTES, prefix=PREFIX)
-        self.assertTrue(True)
-
-    def test_list(self):
-        content_handler = FileSystemContentHandler(base_folder=str(BASE_DIR))
-        l = content_handler.list(prefix=PREFIX)
+    def test_files(self):
+        self.content_handler.save_text(TEXT_KEY, TEXT, prefix=PREFIX)
+        text = self.content_handler.get_text(TEXT_KEY, prefix=PREFIX)
+        self.assertEqual(text, TEXT)
+        self.content_handler.save_bytes(BYTES_KEY, BYTES, prefix=PREFIX)
+        bytes_ = self.content_handler.get_bytes(BYTES_KEY, prefix=PREFIX)
+        self.assertEqual(bytes_, BYTES)
+        l = self.content_handler.list(prefix=PREFIX)
         self.assertTrue(TEXT_KEY in l and BYTES_KEY in l)
 
-    def test_get_text(self):
-        text = FS_CONTENT_HANDLER.get_text(TEXT_KEY, prefix=PREFIX)
-        self.assertEqual(text, TEXT)
+    def test_write_input_stream(self):
+        def iter():
+            for i in ('a', 'b', 'c', 'd', 'e', 'f', 'g'):
+                res = i * 3
+                yield res.encode("utf8")
 
-    def test_get_bytes(self):
-        bytes_ = FS_CONTENT_HANDLER.get_bytes(BYTES_KEY, prefix=PREFIX)
-        self.assertEqual(bytes_, BYTES)
+        compare = b"".join(iter())
+        iter_reader = IteratorReader(iter())
+        self.content_handler.write_input_stream(iter_reader, BYTES_STREAM_KEY, prefix=PREFIX)
+        bytes_ = self.content_handler.get_bytes(BYTES_STREAM_KEY, prefix=PREFIX)
+        self.assertEqual(bytes_, compare)
+        content_handler_ = copy.copy(self.content_handler)
+        content_handler_.chunk_size = 3
+        iter_reader = IteratorReader(iter())
+        content_handler_.write_input_stream(iter_reader, BYTES_STREAM_KEY_2, prefix=PREFIX)
+        bytes_ = content_handler_.get_bytes(BYTES_STREAM_KEY_2, prefix=PREFIX)
+        self.assertEqual(bytes_, compare)
 
 
-class S3ContentHandlerTestCase(unittest.TestCase):
-    def test_create_text_file(self):
-        S3_CONTENT_HANDLER.save_text(TEXT_KEY, TEXT, prefix=PREFIX)
-        self.assertTrue(True)
-
-    def test_create_binary_file(self):
-        S3_CONTENT_HANDLER.save_bytes(BYTES_KEY, BYTES, prefix=PREFIX)
-        self.assertTrue(True)
-
-    def test_list(self):
-        l = S3_CONTENT_HANDLER.list(prefix=PREFIX)
-        self.assertTrue(TEXT_KEY in l and BYTES_KEY in l)
-
-    def test_get_text(self):
-        text = S3_CONTENT_HANDLER.get_text(TEXT_KEY, prefix=PREFIX)
-        self.assertEqual(text, TEXT)
-
-    def test_get_bytes(self):
-        bytes_ = S3_CONTENT_HANDLER.get_bytes(BYTES_KEY, prefix=PREFIX)
-        self.assertEqual(bytes_, BYTES)
+class S3ContentHandlerTestCase(FsContentHandlerTestCase):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs, content_handler=S3_CONTENT_HANDLER)
 
 
 def test_get_file(self):
