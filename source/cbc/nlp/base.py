@@ -418,7 +418,7 @@ class TokensToFile(IteratorConsumer):
 class CountTokens(IteratorConsumer):
     def __init__(self, word_counter=None, tagged_counter=None):
         if word_counter is None:
-            self.word_counter = Counter
+            self.word_counter = Counter()
         else:
             self.word_counter = word_counter
         if tagged_counter is None:
