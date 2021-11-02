@@ -523,6 +523,16 @@ class Untag(IteratorModifier):
         return Iterator(generator, is_tagged=False)
 
 
+class Flatten(IteratorModifier):
+    def __call__(self, iterator):
+
+        def generator():
+            for x in iterator:
+                yield x
+
+        return Iterator(generator, is_tagged=False)
+
+
 class RandomStringsGenerator(ListGenerator):
     def __init__(self, number_of_docs=10, length_of_words=5, number_of_words=15, is_tagged=False):
         def gen_word():
