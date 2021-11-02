@@ -524,6 +524,16 @@ class Untag(IteratorModifier):
 
 
 class Flatten(IteratorModifier):
+    """
+    An iterator may be "tagged", i.e. each item is a tuple (workload, tags) of the object which is modified within
+    the pipeline (workload) and the tags which is a list of context information. The tags may contain the _file_ from
+    which the object is obtained, the sequential number of the object, etc..
+
+    An ItemModifier operates only on the workload and the tag is passed through.
+
+    The IteratorModifier "Flatten" keeps the (tagged) items as is but considers them as not tagged items, so that
+    subsequent IteratorModifiers may access the tags as well.
+    """
     def __call__(self, iterator):
 
         def generator():
