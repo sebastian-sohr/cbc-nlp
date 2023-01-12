@@ -3,3 +3,5 @@
 /temp
 /conda_venv
 .idea
+.ipynb_checkpoints
+__pycache__
