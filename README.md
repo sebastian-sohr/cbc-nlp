@@ -32,6 +32,33 @@ All these transformation steps can be pipelined in few coding lines and fed into
 The following tutorial will walk you through developing your own NLP-Model using Consileon’s NLP Framework:  
 See [getting_startet.ipynb](examples/notebooks/getting_started.ipynb)
 
+## Developer Notes
+
+### Set-up
+Create a virtual environment
+```
+py -3 -m venv .venv
+.venv\scripts\activate
+```
+Now install the package i) as an editible install (so code changes come into effect without a re-install) and ii) with the dev option (to have access to dev requirements such as `pytest`)
+```
+python -m pip install .[dev]
+```
+
+### requirements.txt file
+For development purposes, there also exists a set of `requirements.txt` files, where the `dev-requirements.txt` file again includes additional packages such as `pytest`.
+
+Generally, the `requirements.txt` are maintained and updated via `pip-compile` using the following command
+```bash
+pip-compile --no-annotate --output-file=requirements.txt pyproject.toml
+```
+
+To update the `dev-requirements.txt`, use
+````
+pip-compile --no-annotate --extra dev --output-file=dev-requirements.txt pyproject.toml
+```
+
+
 
 
 
