@@ -70,7 +70,7 @@ import logging
 import numbers
 from itertools import compress
 
-import cbc.content as content
+from . import content
 
 STANDARD_SEPARATOR = ":-):-|:-("
 
