@@ -1,11 +1,29 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [project]
-name = "cbc-nlp"
+name = "cbcnlpPhilipp"
 version = "0"
-dependencies = ["numpy", "spacy", "nltk", "gensim", "tika", "boto3", "beautifulsoup4", "lxml", "s3-streaming"]
+description = "Simplify NLP pre-processing."
+readme = "README.md"
+authors = [{ name = "Consileon.ai", email = "sebastian.sohr@consileon.de" }]
+
+dependencies = ["numpy",
+                "spacy",
+                "nltk",
+                "gensim",
+                "tika",
+                "boto3",
+                "beautifulsoup4",
+                "lxml",
+                "s3-streaming",
+                "de-core-news-sm @ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.0.0/de_core_news_sm-3.0.0-py3-none-any.whl",
+                "en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.0.0/en_core_web_sm-3.0.0-py3-none-any.whl",
+                ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pip-tools"]
+
+[project.urls]
+Homepage = "https://github.com/consileon-ai/cbc-nlp"
