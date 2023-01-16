@@ -1,7 +1,8 @@
 # cbc-nlp : The "consileon NLP framework"
 
-## Prerequisites
-- Install the requirements specified in [requirements.txt](requirements.txt)
+## Installation
+- Install via: `py -m pip install --index-url https://test.pypi.org/simple/ --no-deps cbc-nlp` or using the [requirements.txt](requirements.txt)
+- Install the relevant `spaCy` model through `$ python -m spacy download [model]`. For further details, see the [spaCy Website](https://spacy.io/usage/models#download)
 
 ## Why Consileon NLP Framework?
 NLP models are developed based on text sources which contain (long) sequences of texts. A major part of the development is the pre-processing of input data. Most effort and time is spent on transforming text into other objects (lists of tokens) in order to be handled by NLP algorithms. This is where Consileon’s NLP Framework comes into play. 
@@ -43,6 +44,24 @@ py -3 -m venv .venv
 Now install the package i) as an editible install (so code changes come into effect without a re-install) and ii) with the dev option (to have access to dev requirements such as `pytest`)
 ```
 python -m pip install .[dev]
+```
+
+### Distribution/ Versioning
+Update software and build `dist\` folder
+```Bash
+pip install --upgrade build
+python -m build
+```
+
+Upload to distribution archive using `twine`
+```Bash
+pip install --upgrade twine
+py -m twine upload --repository testpypi dist/*
+```
+
+If this doesn't work, add token directly in CLI command
+```
+py -m twine upload --repository testpypi dist/* -u __token__ -p YOUR_RESPECTIVE_TOKEN
 ```
 
 ### requirements.txt file

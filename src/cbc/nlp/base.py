@@ -35,6 +35,8 @@ further arbitrary space
 
 RE_WHITESPACE = re.compile(r"\s+")
 
+DEFAULT_LEMMATIZER = "de_core_news_sm"
+
 LEMMATIZE_MAX_SIZE = 10000
 
 LEMMATIZE_MAX_CHUNK_SIZE = 100000
@@ -166,9 +168,18 @@ class IsNLText(ItemModifier):
 
 class LemmatizeModifier(ItemModifier):
     def __init__(self,
-                 lemmatizer=spacy.load("de_core_news_sm"),
+                 lemmatizer=None,
                  chunksize=LEMMATIZE_MAX_SIZE
                  ):
+        if lemmatizer is None:
+            try:
+                lemmatizer=spacy.load(DEFAULT_LEMMATIZER)
+            except OSError:
+                print(
+                    f"Cannot find default lemmatizer {DEFAULT_LEMMATIZER}.\n"
+                    f"Please download via: $ python -m spacy download {DEFAULT_LEMMATIZER}\n"
+                    "For furhter information, please refer to https://spacy.io/usage/models#download."
+                )
         self.lemmatizer = lemmatizer
         self.chunksize = chunksize
 
@@ -235,11 +246,21 @@ class TokenizeText(ItemModifier):
 
 class LemmaTokenizeText(ItemModifier):
     def __init__(self,
-                 lemmatizer=spacy.load("de_core_news_sm"),
+                 lemmatizer=None,
                  max_chunk_length=LEMMATIZE_MAX_CHUNK_SIZE,
                  re_replace_space_chars=RE_REPLACE_SPACE_CHARS,
                  re_remove_chars=RE_REMOVE_CHARS
                  ):
+        if lemmatizer is None:
+            try:
+                lemmatizer=spacy.load(DEFAULT_LEMMATIZER)
+            except OSError:
+                print(
+                    f"Cannot find default lemmatizer {DEFAULT_LEMMATIZER}.\n"
+                    f"Please download via: $ python -m spacy download {DEFAULT_LEMMATIZER}\n"
+                    "For furhter information, please refer to https://spacy.io/usage/models#download."
+                )
+
         self.lemmatizer = lemmatizer
         self.maxChunkLength = max_chunk_length
         self.re_replace_space_chars = re_replace_space_chars
