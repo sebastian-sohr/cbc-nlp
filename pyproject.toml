@@ -30,5 +30,9 @@ dependencies = ["numpy",
 [project.optional-dependencies]
 dev = ["pytest", "pip-tools"]
 
+[tool.setuptools.package-data]
+"cbc.data" = ["*.txt", "*xml"]
+
 [project.urls]
 Homepage = "https://github.com/consileon-ai/cbc-nlp"
+ConsileonAI = "https://consileon.ai/"

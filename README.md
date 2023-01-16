@@ -33,6 +33,8 @@ All these transformation steps can be pipelined in few coding lines and fed into
 The following tutorial will walk you through developing your own NLP-Model using Consileon’s NLP Framework:  
 See [getting_startet.ipynb](examples/notebooks/getting_started.ipynb)
 
+---
+
 ## Developer Notes
 
 ### Set-up
@@ -73,7 +75,7 @@ pip-compile --no-annotate --output-file=requirements.txt pyproject.toml
 ```
 
 To update the `dev-requirements.txt`, use
-````
+```
 pip-compile --no-annotate --extra dev --output-file=dev-requirements.txt pyproject.toml
 ```
 
