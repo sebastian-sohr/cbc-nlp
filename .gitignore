@@ -2,6 +2,14 @@
 /venv
 /temp
 /conda_venv
+/dist
 .idea
 .ipynb_checkpoints
 __pycache__
+*.egg-info
+.pypirc
+.venv
+.venv*
+.vscode
+
+Sandbox*
