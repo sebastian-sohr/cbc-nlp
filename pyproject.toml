@@ -8,7 +8,7 @@ version = "0.0.1"
 description = "Simplify NLP pre-processing."
 readme = "README.md"
 authors = [{ name = "Consileon.ai", email = "sebastian.sohr@consileon.de" }]
-keywords = ["NLP", "spacy", "iterator"]
+keywords = ["NLP", "pipeline", "AI"]
 license = {file = "LICENSE" }
 classifiers = [
   "Development Status :: 4 - Beta",
