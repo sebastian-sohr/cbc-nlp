@@ -3,11 +3,18 @@ requires      = ["setuptools>=61.0.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "cbcnlpPhilipp"
-version = "0"
+name = "cbc-nlp"
+version = "0.0.1"
 description = "Simplify NLP pre-processing."
 readme = "README.md"
 authors = [{ name = "Consileon.ai", email = "sebastian.sohr@consileon.de" }]
+keywords = ["NLP", "spacy", "iterator"]
+license = {file = "LICENSE" }
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python"
+  "Programming Language :: Python :: 3"
+]
 
 dependencies = ["numpy",
                 "spacy",
