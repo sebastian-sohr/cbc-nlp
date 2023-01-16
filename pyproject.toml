@@ -12,8 +12,8 @@ keywords = ["NLP", "spacy", "iterator"]
 license = {file = "LICENSE" }
 classifiers = [
   "Development Status :: 4 - Beta",
-  "Programming Language :: Python"
-  "Programming Language :: Python :: 3"
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
 ]
 
 dependencies = ["numpy",
@@ -30,7 +30,7 @@ dependencies = ["numpy",
                 ]
 
 [project.optional-dependencies]
-dev = ["pytest", "pip-tools"]
+dev = ["pytest", "pip-tools < 6"]
 
 [project.urls]
 Homepage = "https://github.com/consileon-ai/cbc-nlp"
