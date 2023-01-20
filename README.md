@@ -45,7 +45,7 @@ py -3 -m venv .venv
 ```
 Now install the package i) as an editible install (so code changes come into effect without a re-install) and ii) with the dev option (to have access to dev requirements such as `pytest`)
 ```
-python -m pip install .[dev]
+python -m pip install -e .[dev]
 ```
 
 ### Distribution/ Versioning
