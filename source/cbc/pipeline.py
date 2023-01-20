@@ -2,7 +2,9 @@
 consileon.nlp.tokens
 =====================
 
-Frameword and tools for stream based processing of textual nlp.
+Frameword and tools for stream based processing of AI Input data, esp. textual data.
+
+This package contains the NLP independants funcionality.
 
 The python concept of an "iterator" is heavily used.
 This is a python class implementing the "iterator protocol", which consists of

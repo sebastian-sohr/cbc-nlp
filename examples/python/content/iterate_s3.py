@@ -1,6 +1,6 @@
 import cbc.content as content
 
-h = content.AwsS3ContentHandler("cbc-rss-test", base_prefix="sample_data")
+h = content.AwsS3ContentHandler(bucket="cbc-rss-test", base_prefix="sample_data")
 
 i = h.iterate_lines("rss_tokens.txt")
 n = 1
