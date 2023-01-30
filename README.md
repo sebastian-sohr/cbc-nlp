@@ -62,7 +62,7 @@ Finally, upload to the distribution archive using `twine`. Note, for experimenta
 pip install --upgrade twine
 python -m twine upload --repository testpypi dist/*
 ```
-When asked, set username to "__token__" and your password to the respective token.
+When asked, set username to "`__token__`" and your password to the respective token.
 
 If this doesn't work, add token directly into CLI command
 ```
