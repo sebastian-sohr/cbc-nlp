@@ -49,33 +49,36 @@ python -m pip install -e .[dev]
 ```
 
 ### Distribution/ Versioning
-Update software and build `dist\` folder
+If necessary, update the version number in the `pyproject.toml`.
+
+Next, update the software and build package in `dist\` folder
 ```Bash
 pip install --upgrade build
 python -m build
 ```
 
-Upload to distribution archive using `twine`
+Finally, upload to the distribution archive using `twine`. Note, for experimental changes you can upload to `testPyPI` first, before uploading to `PyPI`.
 ```Bash
 pip install --upgrade twine
-py -m twine upload --repository testpypi dist/*
+python -m twine upload --repository testpypi dist/*
 ```
+When asked, set username to "__token__" and your password to the respective token.
 
-If this doesn't work, add token directly in CLI command
+If this doesn't work, add token directly into CLI command
 ```
-py -m twine upload --repository testpypi dist/* -u __token__ -p YOUR_RESPECTIVE_TOKEN
+python -m twine upload --repository testpypi dist/* -u __token__ -p YOUR_RESPECTIVE_TOKEN
 ```
 
 ### requirements.txt file
 For development purposes, there also exists a set of `requirements.txt` files, where the `dev-requirements.txt` file again includes additional packages such as `pytest`.
 
 Generally, the `requirements.txt` are maintained and updated via `pip-compile` using the following command
-```bash
+```Bash
 pip-compile --no-annotate --output-file=requirements.txt pyproject.toml
 ```
 
 To update the `dev-requirements.txt`, use
-```
+```Bash
 pip-compile --no-annotate --extra dev --output-file=dev-requirements.txt pyproject.toml
 ```
 
