@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cbc-nlp"
-version = "0.0.3"
+version = "0.0.1"
 description = "Simplify NLP pre-processing."
 readme = "README.md"
 authors = [{ name = "Consileon.ai", email = "ai@consileon.de" }]
