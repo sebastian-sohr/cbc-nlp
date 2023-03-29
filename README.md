@@ -33,6 +33,10 @@ All these transformation steps can be pipelined in few coding lines and fed into
 The following tutorial will walk you through developing your own NLP-Model using Consileon’s NLP Framework:  
 See [getting_startet.ipynb](examples/notebooks/getting_started.ipynb)
 
+
+## License
+`cbc-nlp` is licensed under Apache 2.0 as described in the [LICENSE](LICENSE) file.
+
 ---
 
 ## Developer Notes
