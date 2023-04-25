@@ -1,6 +1,6 @@
 import cbc.content as content
 
-h = content.FileSystemContentHandler("../../sample_data")
+h = content.FileSystemContentHandler(base_prefix="../../sample_data")
 
 i = h.iterate_lines("rss_tokens.txt")
 n = 1

@@ -1,3 +1,11 @@
+"""
+Content sources of streaming data:
+
+Currently, the _file system_ and _AWS S3_ are used as content sources.
+
+Other content sources may be implemented by extending the abstract base class ``ContentHandler``
+"""
+
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path

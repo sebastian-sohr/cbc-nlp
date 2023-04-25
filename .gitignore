@@ -1,5 +1,5 @@
 /examples/notebooks/w2v_model_*
-/venv
+/venv*
 /temp
 /conda_venv
 /dist
