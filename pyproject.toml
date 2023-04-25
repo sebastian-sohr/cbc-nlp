@@ -1,0 +1,38 @@
+[build-system]
+requires      = ["setuptools>=61.0.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cbc-nlp"
+version = "0.0.1"
+description = "Simplify NLP pre-processing."
+readme = "README.md"
+authors = [{ name = "Consileon.ai", email = "ai@consileon.de" }]
+keywords = ["NLP", "pipeline", "AI"]
+license = {file = "LICENSE" }
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Programming Language :: Python",
+  "Programming Language :: Python :: 3",
+]
+
+dependencies = ["numpy",
+                "spacy",
+                "nltk",
+                "gensim",
+                "tika",
+                "boto3",
+                "beautifulsoup4",
+                "lxml",
+                "s3-streaming",
+                ]
+
+[project.optional-dependencies]
+dev = ["pytest", "pip-tools"]
+
+[tool.setuptools.package-data]
+"cbc.data" = ["*.txt", "*xml"]
+
+[project.urls]
+Homepage = "https://github.com/consileon-ai/cbc-nlp"
+ConsileonAI = "https://consileon.ai/"
