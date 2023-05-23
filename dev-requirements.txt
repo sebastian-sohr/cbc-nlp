@@ -47,7 +47,7 @@ pytest==7.2.1
 python-dateutil==2.8.2
 pytz==2022.7.1
 regex==2022.10.31
-requests==2.28.2
+requests==2.31.0
 s3-streaming==0.0.3
 s3transfer==0.6.0
 scipy==1.10.0
